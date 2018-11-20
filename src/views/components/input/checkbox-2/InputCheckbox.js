@@ -1,17 +1,21 @@
 import React, { Component } from 'react';
-import { array, func } from 'prop-types';
+import { array, func, object } from 'prop-types';
 import { isArray } from '../../../../utils';
-import { Box, Text, Input } from '../../index';
+import { LayoutConsumer } from '../../../layout';
+import { Box, Recursive, Text, Input } from '../../index';
 
 class InputCheckbox extends Component {
   static defaultProps = {
     value: [],
+    wrapperProps: {},
   }
 
   static propTypes = {
     items: array,
     value: array,
     onChangeValue: func,
+    renderItem: object,
+    wrapperProps: object,
   }
 
   state = {
@@ -33,35 +37,64 @@ class InputCheckbox extends Component {
   }
 
   render() {
-    const { items } = this.props;
+    const {
+      items,
+      renderItem,
+      wrapperProps,
+    } = this.props;
     const { selected } = this.state;
 
     return (
       <Box
         flexDirection="column"
         marginTop={10}
+        {...wrapperProps}
       >
         {isArray( items, { ofMinLength: 1 }) ? (
           items.map( item => (
-            <Box
-              key={item.value}
-              alignItems="center"
-              marginBottom={10}
-            >
-              <Box marginRight={15}>
-                <Input
-                  type="switch"
-                  value={selected.includes( item.value )}
-                  onChangeValue={this.handleChange( item.value )}
-                />
-              </Box>
+            renderItem
+              ? (
+                <LayoutConsumer>
+                  {layout => {
+                    const context = {
+                      item: {
+                        ...item,
+                        selected: selected.includes( item.value ),
+                        onChangeValue: this.handleChange( item.value ),
+                      },
+                      layout,
+                    };
 
-              <Text
-                size="md"
-              >
-                {item.label}
-              </Text>
-            </Box>
+                    return (
+                      <Recursive
+                        {...renderItem}
+                        context={context}
+                      />
+                    );
+                  }}
+                </LayoutConsumer>
+              )
+              : (
+                <Box
+                  key={item.value}
+                  alignItems="center"
+                  marginBottom={10}
+                >
+                  <Box marginRight={15}>
+                    <Input
+                      type="switch"
+                      value={selected.includes( item.value )}
+                      onChangeValue={this.handleChange( item.value )}
+                    />
+                  </Box>
+
+                  <Text
+                    size="md"
+                  >
+                    {item.label}
+                  </Text>
+                </Box>
+              )
           ))
         ) : (
           <Text>
